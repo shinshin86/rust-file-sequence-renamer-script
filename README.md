@@ -7,3 +7,9 @@ I created this to try running it as a script in Rust.
 ```sh
 cargo +nightly -Zscript src/main.rs <path_to_directory>
 ```
+
+## Test
+
+```
+cargo test
+```
