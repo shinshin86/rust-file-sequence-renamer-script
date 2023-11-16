@@ -27,7 +27,6 @@ fn rename_files_in_directory(path: &str) -> io::Result<()> {
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<_>, io::Error>>()?;
     prefixed_entries.sort_by_key(|path| path.file_name().unwrap().to_owned());
-    println!("{:?}", prefixed_entries);
 
     for entry in prefixed_entries {
         if entry.is_file() {
