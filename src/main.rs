@@ -8,8 +8,10 @@ use std::path::Path;
 
 fn rename_files_in_directory(path: &str) -> io::Result<()> {
     let entries = fs::read_dir(path)?
-        .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>, io::Error>>()?;
+        .filter_map(|res|res.ok())
+        .filter(|e| e.path().is_file())
+        .map(|res| res.path())
+        .collect::<Vec<_>>();
 
     let prefix = "temp_rename_"; // A unique prefix to avoid name collisions
 
@@ -57,7 +59,6 @@ fn main() {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -73,19 +74,27 @@ mod tests {
         File::create(dir_path.join("file1.txt"))?;
         File::create(dir_path.join("file2.txt"))?;
         File::create(dir_path.join("image.png"))?;
+        fs::create_dir(dir_path.join("subdir"))?; // Create a subdirectory
 
         // Execution: Rename files in the directory
         rename_files_in_directory(dir_path.to_str().unwrap())?;
 
         // Assertion: Check if files are correctly renamed
-        let mut entries = fs::read_dir(dir_path)?
-            .map(|res| res.map(|e| e.path()))
-            .collect::<Result<Vec<_>, io::Error>>()?;
+        let mut entries: Vec<_> = fs::read_dir(dir_path)?
+            .filter_map(|res| res.ok())
+            .filter(|e| e.path().is_file())
+            .map(|e| e.path())
+            .collect();
         entries.sort(); // Sort the entries to assert in order
 
+        assert_eq!(entries.len(), 3); // Ensure only 3 files are processed (subdirectory is ignored)
         assert_eq!(entries[0].file_name().unwrap().to_str().unwrap(), "1.txt");
         assert_eq!(entries[1].file_name().unwrap().to_str().unwrap(), "2.txt");
         assert_eq!(entries[2].file_name().unwrap().to_str().unwrap(), "3.png");
+
+        // Check if subdirectory still exists and is not renamed
+        assert!(dir_path.join("subdir").exists());
+        assert!(dir_path.join("subdir").is_dir());
 
         // Cleanup: Done automatically by the tempdir destructor
 
